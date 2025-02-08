@@ -2,7 +2,10 @@
 // Copyright discord.js authors. All rights reserved. Apache License 2.0
 
 import { type EventEmitter, once } from 'node:events';
-import type { VoiceConnection, VoiceConnectionStatus } from '../VoiceConnection';
+import type {
+  VoiceConnection,
+  VoiceConnectionStatus,
+} from '../VoiceConnection';
 import type { AudioPlayer, AudioPlayerStatus } from '../audio/AudioPlayer';
 import { abortAfter } from './abortAfter';
 
@@ -14,9 +17,9 @@ import { abortAfter } from './abortAfter';
  * @param timeoutOrSignal - The maximum time we are allowing for this to occur, or a signal that will abort the operation
  */
 export function entersState(
-    target: VoiceConnection,
-    status: VoiceConnectionStatus,
-    timeoutOrSignal: AbortSignal | number,
+  target: VoiceConnection,
+  status: VoiceConnectionStatus,
+  timeoutOrSignal: AbortSignal | number,
 ): Promise<VoiceConnection>;
 
 /**
@@ -27,9 +30,9 @@ export function entersState(
  * @param timeoutOrSignal - The maximum time we are allowing for this to occur, or a signal that will abort the operation
  */
 export function entersState(
-    target: AudioPlayer,
-    status: AudioPlayerStatus,
-    timeoutOrSignal: AbortSignal | number,
+  target: AudioPlayer,
+  status: AudioPlayerStatus,
+  timeoutOrSignal: AbortSignal | number,
 ): Promise<AudioPlayer>;
 
 /**
@@ -40,19 +43,21 @@ export function entersState(
  * @param timeoutOrSignal - The maximum time we are allowing for this to occur, or a signal that will abort the operation
  */
 export async function entersState<Target extends AudioPlayer | VoiceConnection>(
-    target: Target,
-    status: AudioPlayerStatus | VoiceConnectionStatus,
-    timeoutOrSignal: AbortSignal | number,
+  target: Target,
+  status: AudioPlayerStatus | VoiceConnectionStatus,
+  timeoutOrSignal: AbortSignal | number,
 ) {
-    if (target.state.status !== status) {
-        const [ac, signal] =
-            typeof timeoutOrSignal === 'number' ? abortAfter(timeoutOrSignal) : [undefined, timeoutOrSignal];
-        try {
-            await once(target as EventEmitter, status, { signal });
-        } finally {
-            ac?.abort();
-        }
+  if (target.state.status !== status) {
+    const [ac, signal] =
+      typeof timeoutOrSignal === 'number'
+        ? abortAfter(timeoutOrSignal)
+        : [undefined, timeoutOrSignal];
+    try {
+      await once(target as EventEmitter, status, { signal });
+    } finally {
+      ac?.abort();
     }
+  }
 
-    return target;
+  return target;
 }

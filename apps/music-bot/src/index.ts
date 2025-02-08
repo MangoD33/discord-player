@@ -1,50 +1,60 @@
 /* eslint-disable */
-import { Player } from 'discord-player';
-import { Client, Events, IntentsBitField } from 'discord.js';
-import { PlayCommand } from './play';
-import { NowPlayingCommand } from './nowplaying';
+import { Player, StreamType } from 'discord-player';
+import { Client, IntentsBitField } from 'discord.js';
+import { CommandKit } from 'commandkit';
+import { createWriteStream } from 'node:fs';
+import { join } from 'node:path';
 
 const client = new Client({
-    // prettier-ignore
-    intents: [
+  // prettier-ignore
+  intents: [
         IntentsBitField.Flags.Guilds,
         IntentsBitField.Flags.GuildVoiceStates,
         IntentsBitField.Flags.GuildMembers,
         IntentsBitField.Flags.GuildMessages,
         IntentsBitField.Flags.MessageContent
-    ]
+    ],
 });
 
 const player = Player.create(client);
 
-client.once(Events.ClientReady, async () => {
-    await player.extractors.loadDefault();
-    console.log('Ready!');
+player.on('error', console.error);
+player.events.on('error', (_, e) => console.error(e));
+player.events.on('playerError', (_, e) => console.error(e));
+player.events.on('playerStart', (queue, track) => {
+  queue.metadata.channel.send(`Started playing ${track.title}`);
+});
+player.events.on('playerFinish', (queue, track) => {
+  queue.metadata.channel.send(`Finished playing ${track.title}`);
+});
+player.events.on('playerSeek', (queue, time) => {
+  console.log(`Seeked ${queue.currentTrack} to ${time}ms`);
 });
 
-client.on(Events.MessageCreate, async (message) => {
-    if (!message.guild || message.author.bot) return;
-
-    const prefix = '!';
-    if (!message.content.startsWith(prefix)) return;
-
-    const args = message.content.slice(prefix.length).trim().split(/ +/);
-
-    const command = args.shift();
-
-    try {
-        await player.context.provide({ guild: message.guild }, () => {
-            switch (command) {
-                case 'play':
-                    return PlayCommand(message, args);
-                case 'np':
-                    return NowPlayingCommand(message);
-            }
-        });
-    } catch (e) {
-        console.error(e);
-        message.channel.send('An error occurred while executing this command.');
-    }
+const interceptor = player.createStreamInterceptor({
+  async shouldIntercept(queue, track) {
+    return !track.raw.isFile;
+  },
 });
 
-client.login();
+interceptor.onStream((queue, track, format, stream) => {
+  const ext = format === StreamType.Opus ? '.opus' : '.pcm';
+  stream.interceptors.add(
+    createWriteStream(
+      import.meta.dirname +
+        '/../.streams/' +
+        track.title.replace(/[^a-z0-9]/gi, '_') +
+        ext,
+    ),
+  );
+});
+
+new CommandKit({
+  client,
+  bulkRegister: true,
+  skipBuiltInValidations: true,
+  eventsPath: join(import.meta.dirname, 'events'),
+  commandsPath: join(import.meta.dirname, 'commands'),
+});
+
+await client.login();

@@ -10,7 +10,7 @@
   "license": "MIT",
   "description": "",
   "devDependencies": {
-    "@types/node": "^22.2.0",
+    "@types/node": "^22.10.7",
     "tsx": "^4.17.0"
   },
   "dependencies": {
@@ -18,6 +18,6 @@
     "discord-player": "workspace:^",
     "dotenv": "^16.4.5",
     "eris": "^0.17.2",
-    "mediaplex": "^0.0.9"
+    "mediaplex": "^1.0.0"
   }
 }

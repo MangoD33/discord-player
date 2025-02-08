@@ -1,25 +1,63 @@
 import { Guild } from 'discord.js';
 import { Player } from '../Player';
-import { Exceptions } from '../errors';
+import { IllegalHookInvocationError } from '../errors';
 import { createContext, useContext } from './context/async-context';
+import { getGlobalRegistry } from '../utils/__internal__';
 
 export interface HooksCtx {
-    guild: Guild;
+  guild: Guild;
 }
 
 export const SUPER_CONTEXT = createContext<Player>();
+
+const getFallbackContext = () => {
+  return getGlobalRegistry().get('@[player]') as Player | undefined;
+};
 
 /**
  * @private
  */
 export function useHooksContext(hookName: string, mainOnly = false) {
-    const player = SUPER_CONTEXT.consume();
-    if (!player) throw Exceptions.ERR_ILLEGAL_HOOK_INVOCATION('discord-player', 'Player context is not available, is it being called inside <Player>.context.provide()?');
+  let isFallback = false;
 
-    if (mainOnly) return { player, context: {} as HooksCtx };
+  let player: Player | undefined;
 
-    const context = useContext(player.context);
-    if (!context) throw Exceptions.ERR_ILLEGAL_HOOK_INVOCATION(hookName, `${hookName} must be called inside a player context created by <Player>.context.provide()`);
+  if (!(player = SUPER_CONTEXT.consume())) {
+    player = getFallbackContext();
+    isFallback = true;
+  }
 
-    return { context, player };
+  if (!player)
+    throw new IllegalHookInvocationError(
+      'discord-player',
+      `Player context is not available, ${
+        isFallback
+          ? 'did you forget to initialize the player with `new Player(client)`?'
+          : 'is it being called inside <Player>.context.provide()?'
+      }`,
+    );
+
+  if (mainOnly) return { player, context: {} as HooksCtx, isFallback };
+
+  let context: HooksCtx | undefined;
+
+  if (!isFallback) {
+    context = useContext(player.context);
+    if (!context)
+      throw new IllegalHookInvocationError(
+        hookName,
+        `${hookName} must be called inside a player context created by <Player>.context.provide()`,
+      );
+  } else {
+    context = {
+      get guild() {
+        throw new IllegalHookInvocationError(
+          hookName,
+          `${hookName} must be called with an explicit guild argument when not inside a player context`,
+        );
+      },
+    } as unknown as HooksCtx;
+  }
+
+  return { context, player, isFallback };
 }

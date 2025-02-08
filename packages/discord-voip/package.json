@@ -1,6 +1,6 @@
 {
   "name": "discord-voip",
-  "version": "7.0.0-dev.2",
+  "version": "7.1.0",
   "description": "Discord VoIP library used by discord-player",
   "keywords": [
     "discord-player",
@@ -38,7 +38,7 @@
   },
   "devDependencies": {
     "@discord-player/tsconfig": "workspace:^",
-    "tsup": "^8.2.4",
+    "tsup": "^8.3.5",
     "typescript": "^5.5.4"
   },
   "dependencies": {
@@ -46,7 +46,14 @@
     "@discord-player/opus": "workspace:^",
     "@discord-player/utils": "workspace:^",
     "@types/ws": "^8.5.10",
-    "tsup": "^8.2.4",
+    "tsup": "^8.3.5",
     "typescript": "^5.5.4"
+  },
+  "typedoc": {
+    "entryPoint": "./src/index.ts",
+    "readmeFile": "./README.md",
+    "tsconfig": "./tsconfig.json",
+    "excludeExternals": true,
+    "excludePrivate": true
   }
 }

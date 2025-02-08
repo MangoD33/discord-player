@@ -8,26 +8,24 @@ Discord Player is a robust framework for developing Discord Music bots using Jav
 
 # Why Choose Discord Player?
 
--   Beginner-friendly with easy-to-understand features
--   TypeScript support
--   Offers hackable APIs.
--   Supports audio player sharing
--   Quick and easy setup process
--   Wide range of player management features
--   Offers 64+ built-in audio filter presets
--   Highly customizable according to your needs
--   Automatic queue management
--   Query caching support
--   Extensible sources through the Extractors API
--   Object-oriented design
--   Built-in stats tracker
--   Offers easy debugging methods
--   Out-of-the-box voice states handling
--   IP Rotation support
--   Easy serialization and deserialization
--   Limited support for [Eris](https://npmjs.com/eris)
-
-> Eris compat mode does not support `VoiceStateUpdate` handler. You need to handle it manually.
+- Beginner-friendly with easy-to-understand features
+- TypeScript support
+- Offers hackable APIs.
+- Supports audio player sharing
+- Quick and easy setup process
+- Wide range of player management features
+- Offers 64+ built-in audio filter presets
+- Highly customizable according to your needs
+- Automatic queue management
+- Query caching support
+- Extensible sources through the Extractors API
+- Object-oriented design
+- Built-in stats tracker
+- Offers easy debugging methods
+- Out-of-the-box voice states handling
+- IP Rotation support
+- Easy serialization and deserialization
+- Experimental support for [Eris](https://npmjs.com/eris) client
 
 ## Installation
 
@@ -42,30 +40,12 @@ $ npm install --save discord-player # main library
 $ npm install --save @discord-player/extractor # extractors provider
 ```
 
-> Discord Player recognizes `@discord-player/extractor` and loads it automatically by default. Just invoke `await player.extractors.loadDefault()`.
-
 #### Opus Library
 
-Since Discord only accepts opus packets, you need to install the opus library. Discord Player supports multiple opus libraries, such as:
-
--   [mediaplex](https://npmjs.com/mediaplex)
--   [@discordjs/opus](https://npmjs.com/@discordjs/opus)
--   [opusscript](https://npmjs.com/opusscript)
--   [@evan/opus](https://npmjs.com/@evan/opus)
--   [node-opus](https://npmjs.com/node-opus)
-
-Among these, mediaplex is the recommended library as it adds more functionalities to discord-player than just libopus interface. You can install opus libraries by running:
+We recommend mediaplex for libopus. Mediaplex also helps with audio metadata extraction.
 
 ```bash
 $ npm install --save mediaplex
-# or
-$ npm install --save @discordjs/opus
-# or
-$ npm install --save opusscript
-# or
-$ npm install --save @evan/opus
-# or
-$ npm install --save node-opus
 ```
 
 #### FFmpeg or Avconv
@@ -92,17 +72,18 @@ Let's create a main player instance. This instance handles and keeps track of al
 
 ```js index.js
 const { Player } = require('discord-player');
+const { DefaultExtractors } = require('@discord-player/extractor');
 
 const client = new Discord.Client({
-    // Make sure you have 'GuildVoiceStates' intent enabled
-    intents: ['GuildVoiceStates' /* Other intents */]
+  // Make sure you have 'GuildVoiceStates' intent enabled
+  intents: ['GuildVoiceStates' /* Other intents */],
 });
 
 // this is the entrypoint for discord-player based application
 const player = new Player(client);
 
-// Now, lets load all the default extractors, except 'YouTubeExtractor'. You can remove the filter if you want to include youtube.
-await player.extractors.loadDefault((ext) => ext !== 'YouTubeExtractor');
+// Now, lets load all the default extractors.
+await player.extractors.loadMulti(DefaultExtractors);
 ```
 
 Discord Player is mostly events based. It emits different events based on the context and actions. Let's add a basic event listener to notify the user when a track starts to play:
@@ -110,8 +91,8 @@ Discord Player is mostly events based. It emits different events based on the co
 ```js index.js
 // this event is emitted whenever discord-player starts to play a track
 player.events.on('playerStart', (queue, track) => {
-    // we will later define queue.metadata object while creating the queue
-    queue.metadata.channel.send(`Started playing **${track.cleanTitle}**!`);
+  // we will later define queue.metadata object while creating the queue
+  queue.metadata.channel.send(`Started playing **${track.cleanTitle}**!`);
 });
 ```
 
@@ -149,27 +130,27 @@ Let's move on to the command part. You can define the command as per your requir
 const { useMainPlayer } = require('discord-player');
 
 export async function execute(interaction) {
-    const player = useMainPlayer(); // get player instance
-    const channel = interaction.member.voice.channel;
-    if (!channel) return interaction.reply('You are not connected to a voice channel!'); // make sure we have a voice channel
-    const query = interaction.options.getString('query', true); // we need input/query to play
+  const player = useMainPlayer(); // get player instance
+  const channel = interaction.member.voice.channel;
+  if (!channel) return interaction.reply('You are not connected to a voice channel!'); // make sure we have a voice channel
+  const query = interaction.options.getString('query', true); // we need input/query to play
 
-    // let's defer the interaction as things can take time to process
-    await interaction.deferReply();
+  // let's defer the interaction as things can take time to process
+  await interaction.deferReply();
 
-    try {
-        const { track } = await player.play(channel, query, {
-            nodeOptions: {
-                // nodeOptions are the options for guild node (aka your queue in simple word)
-                metadata: interaction // we can access this metadata object using queue.metadata later on
-            }
-        });
+  try {
+    const { track } = await player.play(channel, query, {
+      nodeOptions: {
+        // nodeOptions are the options for guild node (aka your queue in simple word)
+        metadata: interaction, // we can access this metadata object using queue.metadata later on
+      },
+    });
 
-        return interaction.followUp(`**${track.cleanTitle}** enqueued!`);
-    } catch (e) {
-        // let's return error if something failed
-        return interaction.followUp(`Something went wrong: ${e}`);
-    }
+    return interaction.followUp(`**${track.cleanTitle}** enqueued!`);
+  } catch (e) {
+    // let's return error if something failed
+    return interaction.followUp(`Something went wrong: ${e}`);
+  }
 }
 ```
 

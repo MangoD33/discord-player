@@ -1,6 +1,6 @@
 {
   "name": "@discord-player/utils",
-  "version": "7.0.0-dev.2",
+  "version": "7.1.0",
   "description": "Discord Player Utilities",
   "keywords": [
     "discord-player"
@@ -38,13 +38,15 @@
   },
   "devDependencies": {
     "@discord-player/tsconfig": "workspace:^",
-    "tsup": "^7.2.0",
+    "tsup": "^8.3.5",
     "typescript": "^5.2.2",
     "vitest": "^0.34.6"
   },
   "typedoc": {
     "entryPoint": "./src/index.ts",
     "readmeFile": "./README.md",
-    "tsconfig": "./tsconfig.json"
+    "tsconfig": "./tsconfig.json",
+    "excludeExternals": true,
+    "excludePrivate": true
   }
 }
